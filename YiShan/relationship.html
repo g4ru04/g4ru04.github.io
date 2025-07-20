@@ -24,7 +24,7 @@
       background-size: 1920px auto;
     }
     .center{
-      font-size: 12px;
+      font-size: 1rem;
       /*font-weight: bold;*/
       width: 400px;
       height: 60px;
@@ -81,7 +81,7 @@
     let distanceDay = Math.floor(distanceHour / 24);
     let distanceMonth = Math.floor(distanceDay / 30);
     $('.center').html('與妳交往的<br>'
-      + '<div style="font-size:1.5em">第 '+ (distanceDay)+' 天'
+      + '<div style="font-size:1.25rem">第 '+ (distanceDay)+' 天'
       + '又 '+ (distanceHour % 24)+' 小時'
       + ' '+ (''+(distanceMin % 60)).padStart(2,'0')+' 分'
       + ' '+ (''+(distanceSec % 60)).padStart(2,'0')+' 秒</div>');
