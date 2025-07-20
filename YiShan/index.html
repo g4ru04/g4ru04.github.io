@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>我的全螢幕內容</title>
+    <style>
+        /* 重置瀏覽器預設樣式 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 防止滾動條出現，因為內容將由 iframe 自己處理 */
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 讓 iframe 佔滿整個視窗 */
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none; /* 移除 iframe 預設邊框 */
+            display: block; /* 防止某些瀏覽器在 iframe 下方出現的小空隙 */
+        }
+    </style>
+</head>
+<body>
+<iframe src="./relationship.html" title="全螢幕內容"></iframe>
+</body>
+</html>

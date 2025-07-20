@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF8">
+  <title>與乙珊在一起</title>
+  <link rel="shortcut icon" href="http://pic.ibaotu.com/01/79/49/348888piC6bw.jpg-0.jpg!w340" type="image/x-icon" />
+  <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+  <style>
+    .full {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      width: calc(100vw - 80px);
+      height: calc(100vh - 80px);
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position:center;
+      text-align: center;
+      opacity: 0.8;
+    }
+    body{
+      background-color: #333;
+      background: url(./galaxy.gif) repeat #0a0a0a !important;
+      background-size: 1920px auto;
+    }
+    .center{
+      font-size: 12px;
+      /*font-weight: bold;*/
+      width: 400px;
+      height: 60px;
+      margin: auto;
+      position:fixed;
+      top: calc( 50vh - 10px );
+      left: calc( 50vw - 200px );
+      background: radial-gradient(300px 40px ellipse,#900, transparent 80%);
+      color: #dda700;
+    }
+    .play {
+      position: fixed;
+      top: calc(50vh - 80px);
+      left: calc(50vw - 40px);
+      width: 80px;
+      height: 80px;
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position:center;
+      text-align: center;
+      opacity: 0.3;
+      background-image:url(./play.png);
+    }
+    #back {
+      opacity: 0.6;
+      background-image:url(./we2.jpg);
+    }
+    #front {
+      display:none;
+      opacity: 0.6;
+      background-image:url(./we1.jpg);
+    }
+  </style>
+  </head>
+  <body>
+
+    <div class='play' id='play' style=''></div>
+    <div class='full' id='back' style=''></div>
+    <div class='full' id='front' style=''></div>
+    <div class='full'>
+      <div class='center'></div>
+    </div>
+
+    <audio loop=true autoplay=true id="piano">
+      <source src="./ed-perfect.mp3" >
+    </audio>
+  <script>
+  function setTime(time){
+    let thatDay = new Date('2025/07/12 21:00').getTime();
+    let distance = (new Date(time).getTime() - thatDay);
+    let distanceSec = Math.floor(distance / 1000);
+    let distanceMin = Math.floor(distanceSec / 60);
+    let distanceHour = Math.floor(distanceMin / 60);
+    let distanceDay = Math.floor(distanceHour / 24);
+    let distanceMonth = Math.floor(distanceDay / 30);
+    $('.center').html('與妳交往的<br>'
+      + '<div style="font-size:1.5em">第 '+ (distanceDay)+' 天'
+      + '又 '+ (distanceHour % 24)+' 小時'
+      + ' '+ (''+(distanceMin % 60)).padStart(2,'0')+' 分'
+      + ' '+ (''+(distanceSec % 60)).padStart(2,'0')+' 秒</div>');
+  }
+
+  // function setFrozenTime(){
+  //   setTime('2021/04/28 19:08:55');
+  //   setTimeout(function(){
+  //     setTime('2021/04/28 19:07:55');
+  //   },40);
+  //
+  //   setTimeout(function(){
+  //     setTime('2021/04/28 19:07:54');
+  //   },200);
+  // }
+  $(function(){
+    setTime(new Date());
+
+    document.body.addEventListener("click", function () {
+      document.getElementById("piano").currentTime = 10;
+      document.getElementById("play").remove();
+      document.getElementById("piano").play();
+    })
+    setInterval(function(){
+      $('#front').fadeIn(2000);
+      $('#back').fadeOut(2000);
+      setTimeout(function(){
+        $('#front').fadeOut(1500);
+        $('#back').fadeIn(1500);
+      },7*1000);
+    }, 20*1000);
+    // setFrozenTime();
+    setInterval(function(){
+      setTime(new Date());
+    }, 1000);
+    setTimeout(function(){
+      document.getElementById("piano").play();
+    }, 3000);
+  });
+  </script>
+  </body>
+  </html>
