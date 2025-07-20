@@ -112,8 +112,18 @@
     document.getElementById("piano").currentTime = 10;
 
     document.body.addEventListener("click", function () {
-      document.getElementById("play").remove();
-      document.getElementById("piano").play();
+      const piano = document.getElementById("piano");
+      const playButton = document.getElementById("play");
+      if (playButton) {
+        playButton.remove();
+        piano.play();
+      } else {
+        if (piano.paused) {
+          piano.play();
+        } else {
+          piano.pause();
+        }
+      }
     })
     setInterval(function(){
       $('#front').fadeIn(2000);
