@@ -108,9 +108,9 @@
   // }
   $(function(){
     setTime(new Date());
+    document.getElementById("piano").currentTime = 10;
 
     document.body.addEventListener("click", function () {
-      document.getElementById("piano").currentTime = 10;
       document.getElementById("play").remove();
       document.getElementById("piano").play();
     })
@@ -126,9 +126,6 @@
     setInterval(function(){
       setTime(new Date());
     }, 1000);
-    setTimeout(function(){
-      document.getElementById("piano").play();
-    }, 3000);
   });
   </script>
   </body>
