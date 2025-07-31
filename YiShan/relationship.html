@@ -17,6 +17,7 @@
 
     <link rel="icon" href="https://g4ru04.github.io/YiShan/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="https://g4ru04.github.io/YiShan/favicon.ico" type="image/x-icon" />
+    <link rel="preload" as="image" href="./we1.jpg">
   <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
     <script>
       const expectedHash = "c0d7c54022345b39c9be73e19b30ccb040ba03b1fefb2566a9f510a09aba4796";
@@ -158,7 +159,7 @@
     let picHtml = '';
     let first = true;
     for (const id of picIDs) {
-      picHtml += `<div class='full' id='${id}' style='${ first ? '' : 'display:none;' } opacity: 0.6; background-image:url(./${id}.jpg);'></div>`;
+      picHtml += `<div class='full' id='${id}' style='${ first ? '' : 'opacity:0; visibility:hidden;' } opacity: 0.6; background-image:url(./${id}.jpg);'></div>`;
       first = false;
     }
     $("#pics").html(picHtml);
@@ -166,6 +167,8 @@
     let counter2 = 1;
     setInterval(function(){
       $('#'+picIDs[counter1]).fadeOut(2000);
+      $('#'+picIDs[counter2]).css("visibility","visible");
+      $('#'+picIDs[counter2]).css("display","none");
       $('#'+picIDs[counter2]).fadeIn(2000);
       counter1 = (counter1+1) % picIDs.length;
       counter2 = (counter2+1) % picIDs.length;
