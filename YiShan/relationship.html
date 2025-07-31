@@ -15,6 +15,26 @@
     <link rel="icon" href="https://g4ru04.github.io/YiShan/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="https://g4ru04.github.io/YiShan/favicon.ico" type="image/x-icon" />
   <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+    <script>
+      const expectedHash = "c0d7c54022345b39c9be73e19b30ccb040ba03b1fefb2566a9f510a09aba4796";
+      async function sha256(str) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(str);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      async function checkPassword() {
+        const pwd = prompt("請輸入密碼：");
+        const hash = await sha256(pwd);
+        if (hash !== expectedHash) {
+          window.location.href = "/";
+        }
+      }
+
+      checkPassword();
+    </script>
   <style>
     .full {
       position: fixed;
@@ -58,11 +78,11 @@
       opacity: 0.3;
       background-image:url(./play.png);
     }
-    #back {
+    #pic1 {
       opacity: 0.6;
       background-image:url(./we2.jpg);
     }
-    #front {
+    #pic2, #pic3,#pic4,#pic5,#pic6,#pic7,#pic8,#pic9,#pic10,#pic11,#pic12,#pic13 {
       display:none;
       opacity: 0.6;
       background-image:url(./we1.jpg);
@@ -72,8 +92,9 @@
   <body>
 
     <div class='play' id='play' style=''></div>
-    <div class='full' id='back' style=''></div>
-    <div class='full' id='front' style=''></div>
+    <div class='full' id='pics' style=''>
+
+    </div>
     <div class='full'>
       <div class='center'></div>
     </div>
@@ -125,14 +146,27 @@
         }
       }
     })
+    const picIDs = [
+      'we1', 'we2', 'we3', 'we4', 'we5', 'we6', 'we7', 'we8', 'we9', 'we10',
+      'we11', 'we12', 'we13', 'we14', 'we15', 'we16', 'we17', 'we18', 'we19','we20',
+      'we21', 'we22', 'we23', 'we24', 'we25',// 'we26', 'we27', 'we28',
+    ];
+
+    let picHtml = '';
+    let first = true;
+    for (const id of picIDs) {
+      picHtml += `<div class='full' id='${id}' style='${ first ? '' : 'display:none;' } opacity: 0.6; background-image:url(./${id}.jpg);'></div>`;
+      first = false;
+    }
+    $("#pics").html(picHtml);
+    let counter1 = 0;
+    let counter2 = 1;
     setInterval(function(){
-      $('#front').fadeIn(2000);
-      $('#back').fadeOut(2000);
-      setTimeout(function(){
-        $('#front').fadeOut(1500);
-        $('#back').fadeIn(1500);
-      },7*1000);
-    }, 20*1000);
+      $('#'+picIDs[counter1]).fadeOut(2000);
+      $('#'+picIDs[counter2]).fadeIn(2000);
+      counter1 = (counter1+1) % picIDs.length;
+      counter2 = (counter2+1) % picIDs.length;
+    }, 6 * 1000);
     // setFrozenTime();
     setInterval(function(){
       setTime(new Date());
