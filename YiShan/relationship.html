@@ -18,8 +18,9 @@
 
     <link rel="icon" href="https://g4ru04.github.io/YiShan/favicon.ico" type="image/x-icon" />
     <link rel="shortcut icon" href="https://g4ru04.github.io/YiShan/favicon.ico" type="image/x-icon" />
-    <link rel="preload" as="image" href="./we1.jpg" />
-    <link rel="preload" as="audio" href="./ed-perfect.mp3" />
+    <link rel="preload" as="image" href="./pictures/we1.jpg">
+    <link rel="preload" as="image" href="./pictures/we2.jpg">
+    <link rel="preload" as="audio" href="./ed-perfect.mp3">
   <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
     <script>
       const expectedHash = "c0d7c54022345b39c9be73e19b30ccb040ba03b1fefb2566a9f510a09aba4796";
@@ -53,6 +54,16 @@
       background-position:center;
       text-align: center;
       opacity: 0.8;
+    }
+    .image-container .low-res {
+      filter: blur(10px);
+      transform: scale(1.1);
+    }
+    .image-container .full-res.hidden {
+      opacity: 0;
+    }
+    .image-container .full-res.loaded {
+      opacity: 1;
     }
     body{
       background-color: #333;
@@ -174,6 +185,66 @@
   $(function(){
     setTime(new Date());
     document.getElementById("piano").currentTime = 10;
+    // document.addEventListener('DOMContentLoaded', () => {
+    //   const fullResImg = document.querySelector('.full-res');
+    //   const lowResImg = document.querySelector('.low-res');
+    //
+    //   fullResImg.onload = () => {
+    //     // 當高品質圖片載入完成後
+    //     fullResImg.classList.remove('hidden'); // 顯示高品質圖片
+    //     fullResImg.classList.add('loaded');
+    //     // 可以選擇性地移除模糊圖，或讓其逐漸隱藏
+    //     lowResImg.style.opacity = '0';
+    //     lowResImg.style.display = 'none'; // 完成過渡後再隱藏
+    //   };
+    //
+    //   // 設定高品質圖片的 src 以觸發載入
+    //   // 也可以透過 Intersection Observer 實現延遲載入
+    //   // fullResImg.src = fullResImg.dataset.src; // 如果是延遲載入，則從 data-src 讀取
+    // });
+    // $(".full-res").on ("loaded", function() {
+    //   console.log("????");
+    //   $(this).parent().find('.low-res').remove();
+    //   console.log("????",$(this).parent().find('.low-res'));
+    //   // // 當低解析度圖片載入完成後，開始載入高解析度圖片
+    //   // const fullResImg = $(this).siblings('.full-res')[0];
+    //   // if (fullResImg) {
+    //   //   fullResImg.src = fullResImg.dataset.src || fullResImg.src; // 如果有 data-src 屬性，則使用它
+    //   // }
+    // });
+    $('.low-res').on('load', function() {
+      // 'this' 指的是當前載入完成的 low-res 圖片元素
+      const $lowResImg = $(this);
+
+      // 找到 low-res 圖片的父元素 (即 .image-container)
+      const $parentContainer = $lowResImg.parent();
+
+      // 在父元素內部找到 full-res 圖片
+      const $fullResImg = $parentContainer.find('.full-res');
+
+      // 設定 full-res 圖片的 src，觸發其載入
+      // 假設 full-res 的真實 src 儲存在 data-src 屬性中
+      if ($fullResImg.data('src')) {
+        $fullResImg.attr('src', $fullResImg.data('src'));
+      }
+
+      // 當 full-res 圖片載入完成後執行
+      $fullResImg.on('load', function() {
+        // 顯示高品質圖片
+        $(this).removeClass('hidden').addClass('loaded');
+
+        // 讓低品質圖片淡出並移除
+        $lowResImg.fadeOut(500, function() {
+          $(this).remove(); // 動畫完成後移除
+        });
+      });
+
+      // 處理如果 full-res 圖片已經被瀏覽器快取，不會觸發 load 事件的情況
+      // 判斷方式為圖片的 complete 屬性為 true 且 naturalWidth 大於 0
+      if ($fullResImg[0].complete && $fullResImg[0].naturalWidth > 0) {
+        $fullResImg.trigger('load'); // 手動觸發 load 事件
+      }
+    });
 
     $("#playButton").on("click",function() {
       playMusic();
@@ -196,7 +267,21 @@
           styleStr = 'display:none;'
         }
       }
-      picHtml += `<div class='full' id='${id}' style='${ styleStr } opacity: 0.6; background-image:url(./${id}.jpg);'></div>`;
+//       picHtml += `
+// <div class="full">
+// <img srcset="./pictures/ligth_${id}.jpg 480w, ./pictures/light-${id}.jpg 800w, ./pictures/${id}.jpg 1200w"
+// style='${ styleStr } opacity: 0.6;'
+// sizes="(max-width: 600px) 480px, (max-width: 900px) 800px, 1200px"
+// src="./pictures/${id}.jpg" id ="${id}"/>
+// </div>
+// `
+//       picHtml += `
+// <div class="image-container full" id='${id}' style='${ styleStr } opacity: 0.6;'>
+//   <img class="low-res" src="./pictures/light_${id}.jpg" alt="圖片描述">
+//   <img class="full-res hidden" src="./pictures/${id}.jpg" alt="圖片描述">
+// </div>
+// `
+      picHtml += `<div class='full' id='${id}' style='${ styleStr } opacity: 0.6; background-image:url(./pictures/light_${id}.jpg);'></div>`;
     }
     $("#pics").html(picHtml);
 
