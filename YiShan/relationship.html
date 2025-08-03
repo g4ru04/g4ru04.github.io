@@ -71,7 +71,7 @@
       background: radial-gradient(300px 40px ellipse,#900, transparent 80%);
       color: #dda700;
     }
-    .play {
+    .playButton {
       position: fixed;
       top: calc(50vh + 30px);
       left: calc(50vw - 40px);
@@ -84,24 +84,21 @@
       opacity: 0.3;
       background-image:url(./play.png);
     }
-    #pic1 {
-      opacity: 0.6;
-      background-image:url(./we2.jpg);
-    }
-    #pic2, #pic3,#pic4,#pic5,#pic6,#pic7,#pic8,#pic9,#pic10,#pic11,#pic12,#pic13 {
-      display:none;
-      opacity: 0.6;
-      background-image:url(./we1.jpg);
-    }
+    /*#pic1 {*/
+    /*  opacity: 0.6;*/
+    /*  background-image:url(./we2.jpg);*/
+    /*}*/
+    /*#pic2, #pic3,#pic4,#pic5,#pic6,#pic7,#pic8,#pic9,#pic10,#pic11,#pic12,#pic13 {*/
+    /*  display:none;*/
+    /*  opacity: 0.6;*/
+    /*  background-image:url(./we1.jpg);*/
+    /*}*/
   </style>
   </head>
   <body>
-
-    <div class='play' id='play' style=''></div>
-    <div class='full' id='pics' style=''>
-
-    </div>
     <div class='full'>
+      <div class='full' id='pics' style=''></div>
+      <div class='playButton' id='playButton' style=''></div>
       <div class='center'></div>
     </div>
 
@@ -124,39 +121,54 @@
       + ' '+ (''+(distanceSec % 60)).padStart(2,'0')+' 秒</div>');
   }
 
-  // function setFrozenTime(){
-  //   setTime('2021/04/28 19:08:55');
-  //   setTimeout(function(){
-  //     setTime('2021/04/28 19:07:55');
-  //   },40);
-  //
-  //   setTimeout(function(){
-  //     setTime('2021/04/28 19:07:54');
-  //   },200);
-  // }
+  let counter1 = 0;
+  let counter2 = 1;
+  const picIDs = [
+    'we1', 'we2', 'we3', 'we4', 'we5', 'we6', 'we7', 'we8', 'we9', 'we10',
+    'we11', 'we12', 'we13', 'we14', 'we15', 'we16', 'we17', 'we18', 'we19','we20',
+    'we21', 'we22', 'we23', 'we24', 'we25','we26', 'we27', 'we28', 'we29', 'we30',
+    'we31', 'we32', 'we33', 'we34', 'we35'//, 'we36', 'we37', 'we38', 'we39', 'we40',
+  ];
+  function changePic(ms=2000){
+    $('#'+picIDs[counter1]).fadeOut(ms);
+    $('#'+picIDs[counter2]).css("visibility","visible");
+    $('#'+picIDs[counter2]).css("display","none");
+    $('#'+picIDs[counter2]).fadeIn(ms);
+    counter1 = (counter1+1) % picIDs.length;
+    counter2 = (counter2+1) % picIDs.length;
+  }
+  function changePicImmediately(){
+    changePic(100);
+  }
+  function playMusic(){
+    const piano = $("#piano")[0];
+    const playButton = $("#playButton");
+    if (playButton.length) {
+      playButton.remove();
+      piano.play();
+    }else{
+      if (piano.paused) {
+        piano.play();
+      } else {
+        piano.pause();
+      }
+    }
+  }
+
   $(function(){
     setTime(new Date());
     document.getElementById("piano").currentTime = 10;
 
-    document.body.addEventListener("click", function () {
-      const piano = document.getElementById("piano");
-      const playButton = document.getElementById("play");
-      if (playButton) {
-        playButton.remove();
-        piano.play();
-      } else {
-        if (piano.paused) {
-          piano.play();
-        } else {
-          piano.pause();
-        }
-      }
-    })
-    const picIDs = [
-      'we1', 'we2', 'we3', 'we4', 'we5', 'we6', 'we7', 'we8', 'we9', 'we10',
-      'we11', 'we12', 'we13', 'we14', 'we15', 'we16', 'we17', 'we18', 'we19','we20',
-      'we21', 'we22', 'we23', 'we24', 'we25',// 'we26', 'we27', 'we28',
-    ];
+    $("#playButton").on("click",function() {
+      playMusic();
+    });
+    $("#pics").on("click",function() {
+      changePicImmediately();
+    });
+    $("body").on("dblclick", function() {
+      playMusic();
+    });
+
 
     let picHtml = '';
     let first = true;
@@ -164,16 +176,11 @@
       picHtml += `<div class='full' id='${id}' style='${ first ? '' : 'opacity:0; visibility:hidden;' } opacity: 0.6; background-image:url(./${id}.jpg);'></div>`;
       first = false;
     }
+    
     $("#pics").html(picHtml);
-    let counter1 = 0;
-    let counter2 = 1;
+
     setInterval(function(){
-      $('#'+picIDs[counter1]).fadeOut(2000);
-      $('#'+picIDs[counter2]).css("visibility","visible");
-      $('#'+picIDs[counter2]).css("display","none");
-      $('#'+picIDs[counter2]).fadeIn(2000);
-      counter1 = (counter1+1) % picIDs.length;
-      counter2 = (counter2+1) % picIDs.length;
+      changePic();
     }, 6 * 1000);
     // setFrozenTime();
     setInterval(function(){
