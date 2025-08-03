@@ -123,19 +123,35 @@
 
   let counter1 = 0;
   let counter2 = 1;
+  let counter3 = 2;
+  let counter4 = 3;
   const picIDs = [
     'we1', 'we2', 'we3', 'we4', 'we5', 'we6', 'we7', 'we8', 'we9', 'we10',
     'we11', 'we12', 'we13', 'we14', 'we15', 'we16', 'we17', 'we18', 'we19','we20',
     'we21', 'we22', 'we23', 'we24', 'we25','we26', 'we27', 'we28', 'we29', 'we30',
     'we31', 'we32', 'we33', 'we34', 'we35'//, 'we36', 'we37', 'we38', 'we39', 'we40',
   ];
-  function changePic(ms=2000){
-    $('#'+picIDs[counter1]).fadeOut(ms);
-    $('#'+picIDs[counter2]).css("visibility","visible");
-    $('#'+picIDs[counter2]).css("display","none");
-    $('#'+picIDs[counter2]).fadeIn(ms);
+  function changePic(ms=800){
+    $(`#${picIDs[counter1]}`).fadeOut(ms);
+    // 下張圖片先藏起來
+    $(`#${picIDs[counter2]}`).css({
+      "opacity": "0.6",
+      "visibility": "visible",
+      "display": "none",
+    });
+    $(`#${picIDs[counter2]}`).fadeIn(ms);
+    // 先讀下兩張照片
+    $(`#${picIDs[counter3]},#${picIDs[counter4]}`).css({
+      "opacity": "0",
+      "visibility": "hidden",
+      "display": "block",
+    });
+
+    counter2 = (counter1+2) % picIDs.length;
+    counter3 = (counter1+3) % picIDs.length;
+    counter4 = (counter1+4) % picIDs.length;
+    // counter1 last to change
     counter1 = (counter1+1) % picIDs.length;
-    counter2 = (counter2+1) % picIDs.length;
   }
   function changePicImmediately(){
     changePic(100);
@@ -171,18 +187,22 @@
 
 
     let picHtml = '';
-    let first = true;
-    for (const id of picIDs) {
-      picHtml += `<div class='full' id='${id}' style='${ first ? '' : 'opacity:0; visibility:hidden;' } opacity: 0.6; background-image:url(./${id}.jpg);'></div>`;
-      first = false;
+    for (let i = 0; i < picIDs.length; i++) {
+      const id = picIDs[i];
+      let styleStr = '';
+      if (i > 0) {
+        styleStr = 'opacity:0; visibility:hidden;'
+        if (i > 4){
+          styleStr = 'display:none;'
+        }
+      }
+      picHtml += `<div class='full' id='${id}' style='${ styleStr } opacity: 0.6; background-image:url(./${id}.jpg);'></div>`;
     }
-    
     $("#pics").html(picHtml);
 
     setInterval(function(){
       changePic();
     }, 6 * 1000);
-    // setFrozenTime();
     setInterval(function(){
       setTime(new Date());
     }, 1000);
