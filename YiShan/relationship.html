@@ -213,7 +213,7 @@
           styleStr = 'display:none;'
         }
       }
-      picHtml += `<div class='full' id='${id}' style='${ styleStr } opacity: 0.6; background-image:url(./pictures/light_${id}.jpg);'></div>`;
+      picHtml += `<div class='full' id='${id}' style='${ styleStr } opacity: 0.6; background-image:url(./pictures/light_${id}.jpg);'><div>${i}</div></div>`;
     }
     $("#pics").html(picHtml);
 
