@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Cast Sender</title>
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover:not(:disabled) {
+            background: #357ae8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        button.connect {
+            background: #34a853;
+            font-size: 18px;
+            padding: 15px 30px;
+        }
+        button.connect:hover:not(:disabled) {
+            background: #2d8e47;
+        }
+        #status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            border-left: 4px solid #4285f4;
+            font-size: 14px;
+        }
+        #debug {
+            margin: 20px 0;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            font-size: 12px;
+            color: #856404;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .cast-button-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+        google-cast-launcher {
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+        }
+        .success {
+            border-left-color: #34a853;
+        }
+        .warning {
+            border-left-color: #fbbc04;
+        }
+        .error {
+            border-left-color: #ea4335;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Google Cast Sender</h1>
+        
+        <div id="status">狀態: 初始化中...</div>
+        <div id="debug">偵錯資訊: 正在載入 Cast SDK...</div>
+        
+        <div class="cast-button-container">
+            <h3>Cast 連接</h3>
+            <p>方法 1: 使用 Google Cast 按鈕</p>
+            <google-cast-launcher id="castLauncher"></google-cast-launcher>
+            <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                (如果看不到 Cast 圖示，請看下方手動連接按鈕)
+            </p>
+            <hr style="margin: 20px 0;">
+            <p>方法 2: 手動連接</p>
+            <button onclick="requestSession()" class="connect" id="manualConnect">
+                🔗 手動請求 Cast 連接
+            </button>
+        </div>
+        
+        <div class="controls">
+            <h3>發送訊息</h3>
+            <input type="text" id="messageInput" placeholder="輸入要發送的訊息">
+            <button onclick="sendMessage()" id="sendBtn" disabled>發送訊息</button>
+        </div>
+        
+        <div class="controls">
+            <h3>媒體控制</h3>
+            <input type="text" id="mediaUrl" placeholder="輸入影片 URL" value="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
+            <button onclick="loadMedia()" id="loadBtn" disabled>播放媒體</button>
+            <button onclick="pauseMedia()" id="pauseBtn" disabled>暫停</button>
+            <button onclick="playMedia()" id="playBtn" disabled>播放</button>
+            <button onclick="stopMedia()" id="stopBtn" disabled>停止</button>
+        </div>
+    </div>
+
+    <script>
+        let castSession = null;
+        let mediaSession = null;
+        let castContext = null;
+
+        // 初始化 Cast API
+        window['__onGCastApiAvailable'] = function(isAvailable) {
+            updateDebug('__onGCastApiAvailable 被呼叫，isAvailable = ' + isAvailable);
+            if (isAvailable) {
+                initializeCastApi();
+            } else {
+                updateDebug('Cast API 不可用', true);
+                updateStatus('錯誤: Cast API 無法載入');
+            }
+        };
+
+        function initializeCastApi() {
+            try {
+                updateDebug('開始初始化 Cast API...');
+                castContext = cast.framework.CastContext.getInstance();
+                
+                // 設定 receiver 的 application ID
+                castContext.setOptions({
+                    receiverApplicationId: "1B46F17D",
+                    // receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+                    autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+                });
+
+                updateDebug('Cast 選項已設定');
+
+                // 監聽 session 狀態
+                castContext.addEventListener(
+                    cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+                    (event) => {
+                        updateDebug('Session 狀態改變: ' + event.sessionState);
+                        switch (event.sessionState) {
+                            case cast.framework.SessionState.SESSION_STARTED:
+                                castSession = event.session;
+                                updateStatus('✅ 已連接到 Cast 裝置', 'success');
+                                updateDebug('Session ID: ' + castSession.getSessionId());
+                                enableButtons(true);
+                                break;
+                            case cast.framework.SessionState.SESSION_RESUMED:
+                                castSession = event.session;
+                                updateStatus('✅ 已重新連接到 Cast 裝置', 'success');
+                                enableButtons(true);
+                                break;
+                            case cast.framework.SessionState.SESSION_ENDED:
+                                castSession = null;
+                                mediaSession = null;
+                                updateStatus('❌ 已中斷連接', 'warning');
+                                updateDebug('Session 已結束');
+                                enableButtons(false);
+                                break;
+                        }
+                    }
+                );
+
+                // 監聽 Cast 狀態
+                castContext.addEventListener(
+                    cast.framework.CastContextEventType.CAST_STATE_CHANGED,
+                    (event) => {
+                        updateDebug('Cast 狀態: ' + event.castState);
+                    }
+                );
+
+                updateStatus('Cast API 已就緒，請點擊 Cast 按鈕或手動連接按鈕', 'success');
+                updateDebug('初始化完成！可以開始連接了。');
+                
+                // 檢查是否已有 session
+                const currentSession = castContext.getCurrentSession();
+                if (currentSession) {
+                    castSession = currentSession;
+                    updateStatus('✅ 已連接到現有的 Cast session', 'success');
+                    enableButtons(true);
+                }
+
+            } catch (error) {
+                updateDebug('初始化錯誤: ' + error.message, true);
+                updateStatus('錯誤: ' + error.message, 'error');
+            }
+        }
+
+        function requestSession() {
+            if (!castContext) {
+                alert('Cast API 尚未初始化');
+                return;
+            }
+
+            updateDebug('請求 Cast session...');
+            updateStatus('正在尋找 Cast 裝置...', 'warning');
+
+            castContext.requestSession().then(
+                () => {
+                    updateDebug('Session 請求成功');
+                    updateStatus('✅ 連接請求已送出', 'success');
+                },
+                (error) => {
+                    updateDebug('Session 請求失敗: ' + error, true);
+                    updateStatus('連接失敗: ' + error, 'error');
+                    alert('無法連接到 Cast 裝置。\n\n可能原因：\n1. 沒有可用的 Cast 裝置\n2. 裝置不在同一網路\n3. 需要使用 HTTPS 或 localhost\n4. 請確認使用 Chrome 瀏覽器');
+                }
+            );
+        }
+
+        function sendMessage() {
+            if (!castSession) {
+                alert('請先連接到 Cast 裝置');
+                return;
+            }
+
+            const message = document.getElementById('messageInput').value;
+            if (!message) {
+                alert('請輸入訊息');
+                return;
+            }
+
+            const namespace = 'urn:x-cast:com.example.custom';
+            castSession.sendMessage(namespace, {
+                type: 'message',
+                text: message
+            }).then(
+                () => {
+                    updateStatus('訊息已發送: ' + message, 'success');
+                    updateDebug('訊息發送成功');
+                    document.getElementById('messageInput').value = '';
+                },
+                (error) => {
+                    updateStatus('發送訊息失敗: ' + error, 'error');
+                    updateDebug('發送失敗: ' + error, true);
+                }
+            );
+        }
+
+        function loadMedia() {
+            if (!castSession) {
+                alert('請先連接到 Cast 裝置');
+                return;
+            }
+
+            const mediaUrl = document.getElementById('mediaUrl').value;
+            if (!mediaUrl) {
+                alert('請輸入媒體 URL');
+                return;
+            }
+
+            updateDebug('載入媒體: ' + mediaUrl);
+
+            const mediaInfo = new chrome.cast.media.MediaInfo(mediaUrl, 'video/mp4');
+            mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+            mediaInfo.metadata.title = '測試影片';
+
+            const request = new chrome.cast.media.LoadRequest(mediaInfo);
+
+            castSession.loadMedia(request).then(
+                () => {
+                    updateStatus('✅ 媒體載入成功', 'success');
+                    updateDebug('媒體載入成功');
+                    mediaSession = castSession.getMediaSession();
+                },
+                (error) => {
+                    updateStatus('媒體載入失敗: ' + error, 'error');
+                    updateDebug('載入失敗: ' + error, true);
+                }
+            );
+        }
+
+        function playMedia() {
+            if (mediaSession) {
+                mediaSession.play(new chrome.cast.media.PlayRequest());
+                updateStatus('▶️ 播放中', 'success');
+                updateDebug('播放命令已送出');
+            }
+        }
+
+        function pauseMedia() {
+            if (mediaSession) {
+                mediaSession.pause(new chrome.cast.media.PauseRequest());
+                updateStatus('⏸️ 已暫停', 'warning');
+                updateDebug('暫停命令已送出');
+            }
+        }
+
+        function stopMedia() {
+            if (mediaSession) {
+                mediaSession.stop(new chrome.cast.media.StopRequest());
+                updateStatus('⏹️ 已停止', 'warning');
+                updateDebug('停止命令已送出');
+            }
+        }
+
+        function updateStatus(message, type = '') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = '狀態: ' + message;
+            statusDiv.className = type;
+        }
+
+        function updateDebug(message, isError = false) {
+            const debugDiv = document.getElementById('debug');
+            const timestamp = new Date().toLocaleTimeString();
+            debugDiv.textContent = `[${timestamp}] ${message}`;
+            if (isError) {
+                debugDiv.style.background = '#f8d7da';
+                debugDiv.style.color = '#721c24';
+                debugDiv.style.borderLeftColor = '#dc3545';
+            } else {
+                debugDiv.style.background = '#fff3cd';
+                debugDiv.style.color = '#856404';
+                debugDiv.style.borderLeftColor = '#ffc107';
+            }
+            console.log(`[Cast Debug] ${message}`);
+        }
+
+        function enableButtons(enabled) {
+            document.getElementById('sendBtn').disabled = !enabled;
+            document.getElementById('loadBtn').disabled = !enabled;
+            document.getElementById('pauseBtn').disabled = !enabled;
+            document.getElementById('playBtn').disabled = !enabled;
+            document.getElementById('stopBtn').disabled = !enabled;
+        }
+
+        // 頁面載入時的提示
+        window.addEventListener('load', () => {
+            updateDebug('頁面已載入，等待 Cast SDK...');
+        });
+    </script>
+</body>
+</html>
