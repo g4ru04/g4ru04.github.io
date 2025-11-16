@@ -161,12 +161,15 @@
                 updateDebug('開始初始化 Cast API...');
                 castContext = cast.framework.CastContext.getInstance();
                 
-                // 設定 receiver 的 application ID
-                castContext.setOptions({
+                const setting = {
                     receiverApplicationId: "AA8663C2",
                     // receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
                     autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-                });
+                }
+                console.log('setting', setting);
+                console.log('receiverApplicationId', setting.receiverApplicationId);
+                // 設定 receiver 的 application ID
+                castContext.setOptions(setting);
 
                 updateDebug('Cast 選項已設定');
 
