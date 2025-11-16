@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Cast Receiver</title>
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 800px;
+        }
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        #status {
+            font-size: 24px;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        #messages {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            min-height: 100px;
+            backdrop-filter: blur(10px);
+        }
+        .message-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        #mediaElement {
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: none;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📺 Cast Receiver</h1>
+        <div id="status" class="pulse">等待連接...</div>
+        <div id="messages">
+            <div style="opacity: 0.7;">訊息會顯示在這裡</div>
+        </div>
+        <video id="mediaElement" controls></video>
+    </div>
+
+    <script>
+        const context = cast.framework.CastReceiverContext.getInstance();
+        const playerManager = context.getPlayerManager();
+        
+        // 自定義訊息命名空間
+        const CUSTOM_CHANNEL = 'urn:x-cast:com.example.custom';
+
+        // 接收自定義訊息
+        context.addCustomMessageListener(CUSTOM_CHANNEL, (customEvent) => {
+            console.log('收到自定義訊息:', customEvent.data);
+            
+            if (customEvent.data.type === 'message') {
+                displayMessage(customEvent.data.text);
+                updateStatus('收到訊息: ' + customEvent.data.text);
+                
+                // 回傳確認訊息給 sender
+                context.sendCustomMessage(CUSTOM_CHANNEL, customEvent.senderId, {
+                    type: 'response',
+                    text: '訊息已接收'
+                });
+            }
+        });
+
+        // 監聽 sender 連接
+        context.addEventListener(
+            cast.framework.system.EventType.SENDER_CONNECTED,
+            (event) => {
+                console.log('Sender 已連接:', event.senderId);
+                updateStatus('已連接到 Sender');
+            }
+        );
+
+        // 監聽 sender 中斷連接
+        context.addEventListener(
+            cast.framework.system.EventType.SENDER_DISCONNECTED,
+            (event) => {
+                console.log('Sender 已中斷:', event.senderId);
+                updateStatus('Sender 已中斷連接');
+            }
+        );
+
+        // 監聽媒體狀態變化
+        playerManager.addEventListener(
+            cast.framework.events.EventType.PLAYER_LOAD_COMPLETE,
+            () => {
+                console.log('媒體載入完成');
+                updateStatus('媒體載入完成，準備播放');
+                document.getElementById('mediaElement').style.display = 'block';
+            }
+        );
+
+        playerManager.addEventListener(
+            cast.framework.events.EventType.PLAYING,
+            () => {
+                console.log('開始播放');
+                updateStatus('播放中...');
+            }
+        );
+
+        playerManager.addEventListener(
+            cast.framework.events.EventType.PAUSE,
+            () => {
+                console.log('已暫停');
+                updateStatus('已暫停');
+            }
+        );
+
+        // 設定選項
+        const options = new cast.framework.CastReceiverOptions();
+        options.disableIdleTimeout = true;
+
+        // 啟動 receiver
+        context.start(options);
+        console.log('Cast Receiver 已啟動');
+
+        function updateStatus(message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('pulse');
+            setTimeout(() => statusDiv.classList.add('pulse'), 100);
+        }
+
+        function displayMessage(text) {
+            const messagesDiv = document.getElementById('messages');
+            const messageItem = document.createElement('div');
+            messageItem.className = 'message-item';
+            messageItem.textContent = text;
+            messageItem.style.animation = 'fadeIn 0.5s';
+            
+            messagesDiv.innerHTML = '';
+            messagesDiv.appendChild(messageItem);
+        }
+
+        // 添加淡入動畫
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

@@ -1,184 +1,173 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Cast Receiver</title>
-    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-            max-width: 800px;
-        }
-        h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        #status {
-            font-size: 24px;
-            margin: 30px 0;
-            padding: 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-        }
-        #messages {
-            margin: 30px 0;
-            padding: 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            min-height: 100px;
-            backdrop-filter: blur(10px);
-        }
-        .message-item {
-            padding: 15px;
-            margin: 10px 0;
-            background: rgba(255,255,255,0.2);
-            border-radius: 8px;
-            font-size: 20px;
-        }
-        #mediaElement {
-            width: 100%;
-            max-width: 640px;
-            margin: 20px auto;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            display: none;
-        }
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>📺 Cast Receiver</h1>
-        <div id="status" class="pulse">等待連接...</div>
-        <div id="messages">
-            <div style="opacity: 0.7;">訊息會顯示在這裡</div>
-        </div>
-        <video id="mediaElement" controls></video>
-    </div>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Cast CAF Receiver</title>
+    <script src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+    <!-- Cast Debug Logger -->
+    <script src="//www.gstatic.com/cast/sdk/libs/devtools/debug_layer/caf_receiver_logger.js"></script>
+  </head>
 
-    <script>
+  <body>
+    <cast-media-player></cast-media-player>
+    <footer>
+      <script src="js/receiver.js">
         const context = cast.framework.CastReceiverContext.getInstance();
         const playerManager = context.getPlayerManager();
-        
-        // 自定義訊息命名空間
-        const CUSTOM_CHANNEL = 'urn:x-cast:com.example.custom';
 
-        // 接收自定義訊息
-        context.addCustomMessageListener(CUSTOM_CHANNEL, (customEvent) => {
-            console.log('收到自定義訊息:', customEvent.data);
-            
-            if (customEvent.data.type === 'message') {
-                displayMessage(customEvent.data.text);
-                updateStatus('收到訊息: ' + customEvent.data.text);
-                
-                // 回傳確認訊息給 sender
-                context.sendCustomMessage(CUSTOM_CHANNEL, customEvent.senderId, {
-                    type: 'response',
-                    text: '訊息已接收'
+        //Media Sample API Values
+        const SAMPLE_URL = "https://storage.googleapis.com/cpe-sample-media/content.json";
+        const StreamType = {
+          DASH: 'application/dash+xml',
+          HLS: 'application/x-mpegurl'
+        }
+        const TEST_STREAM_TYPE = StreamType.DASH
+
+        // Debug Logger
+        const castDebugLogger = cast.debug.CastDebugLogger.getInstance();
+        const LOG_TAG = 'MyAPP.LOG';
+
+        // Enable debug logger and show a 'DEBUG MODE' overlay at top left corner.
+        castDebugLogger.setEnabled(true);
+
+        // Show debug overlay
+        // castDebugLogger.showDebugLogs(true);
+
+        // Set verbosity level for Core events.
+        castDebugLogger.loggerLevelByEvents = {
+          'cast.framework.events.category.CORE': cast.framework.LoggerLevel.INFO,
+          'cast.framework.events.EventType.MEDIA_STATUS': cast.framework.LoggerLevel.DEBUG
+        }
+
+        // Set verbosity level for custom tags.
+        castDebugLogger.loggerLevelByTags = {
+          LOG_TAG: cast.framework.LoggerLevel.DEBUG,
+        };
+
+        function makeRequest (method, url) {
+          return new Promise(function (resolve, reject) {
+            let xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            xhr.onload = function () {
+              if (this.status >= 200 && this.status < 300) {
+                resolve(JSON.parse(xhr.response));
+              } else {
+                reject({
+                  status: this.status,
+                  statusText: xhr.statusText
                 });
-            }
-        });
-
-        // 監聽 sender 連接
-        context.addEventListener(
-            cast.framework.system.EventType.SENDER_CONNECTED,
-            (event) => {
-                console.log('Sender 已連接:', event.senderId);
-                updateStatus('已連接到 Sender');
-            }
-        );
-
-        // 監聽 sender 中斷連接
-        context.addEventListener(
-            cast.framework.system.EventType.SENDER_DISCONNECTED,
-            (event) => {
-                console.log('Sender 已中斷:', event.senderId);
-                updateStatus('Sender 已中斷連接');
-            }
-        );
-
-        // 監聽媒體狀態變化
-        playerManager.addEventListener(
-            cast.framework.events.EventType.PLAYER_LOAD_COMPLETE,
-            () => {
-                console.log('媒體載入完成');
-                updateStatus('媒體載入完成，準備播放');
-                document.getElementById('mediaElement').style.display = 'block';
-            }
-        );
-
-        playerManager.addEventListener(
-            cast.framework.events.EventType.PLAYING,
-            () => {
-                console.log('開始播放');
-                updateStatus('播放中...');
-            }
-        );
-
-        playerManager.addEventListener(
-            cast.framework.events.EventType.PAUSE,
-            () => {
-                console.log('已暫停');
-                updateStatus('已暫停');
-            }
-        );
-
-        // 設定選項
-        const options = new cast.framework.CastReceiverOptions();
-        options.disableIdleTimeout = true;
-
-        // 啟動 receiver
-        context.start(options);
-        console.log('Cast Receiver 已啟動');
-
-        function updateStatus(message) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.textContent = message;
-            statusDiv.classList.remove('pulse');
-            setTimeout(() => statusDiv.classList.add('pulse'), 100);
+              }
+            };
+            xhr.onerror = function () {
+              reject({
+                status: this.status,
+                statusText: xhr.statusText
+              });
+            };
+            xhr.send();
+          });
         }
 
-        function displayMessage(text) {
-            const messagesDiv = document.getElementById('messages');
-            const messageItem = document.createElement('div');
-            messageItem.className = 'message-item';
-            messageItem.textContent = text;
-            messageItem.style.animation = 'fadeIn 0.5s';
-            
-            messagesDiv.innerHTML = '';
-            messagesDiv.appendChild(messageItem);
+        playerManager.setMessageInterceptor(
+                cast.framework.messages.MessageType.LOAD,
+                request => {
+                  castDebugLogger.info(LOG_TAG, 'Intercepting LOAD request');
+
+                  // Map contentId to entity
+                  if (request.media && request.media.entity) {
+                    request.media.contentId = request.media.entity;
+                  }
+
+                  return new Promise((resolve, reject) => {
+                    // Fetch repository metadata
+                    makeRequest('GET', SAMPLE_URL)
+                            .then(function (data) {
+                              // Obtain resources by contentId from downloaded repository metadata.
+                              let item = data[request.media.contentId];
+                              if(!item) {
+                                // Content could not be found in repository
+                                castDebugLogger.error(LOG_TAG, 'Content not found');
+                                reject();
+                              } else {
+                                // Adjusting request to make requested content playable
+                                request.media.contentType = TEST_STREAM_TYPE;
+
+                                // Configure player to parse DASH content
+                                if(TEST_STREAM_TYPE == StreamType.DASH) {
+                                  request.media.contentUrl = item.stream.dash;
+                                }
+
+                                // Configure player to parse HLS content
+                                else if(TEST_STREAM_TYPE == StreamType.HLS) {
+                                  request.media.contentUrl = item.stream.hls
+                                  request.media.hlsSegmentFormat = cast.framework.messages.HlsSegmentFormat.FMP4;
+                                  request.media.hlsVideoSegmentFormat = cast.framework.messages.HlsVideoSegmentFormat.FMP4;
+                                }
+
+                                castDebugLogger.warn(LOG_TAG, 'Playable URL:', request.media.contentUrl);
+
+                                // Add metadata
+                                let metadata = new cast.framework.messages.GenericMediaMetadata();
+                                metadata.title = item.title;
+                                metadata.subtitle = item.author;
+
+                                request.media.metadata = metadata;
+
+                                // Resolve request
+                                resolve(request);
+                              }
+                            });
+                  });
+                });
+
+        // Optimizing for smart displays
+        const touchControls = cast.framework.ui.Controls.getInstance();
+        const playerData = new cast.framework.ui.PlayerData();
+        const playerDataBinder = new cast.framework.ui.PlayerDataBinder(playerData);
+
+        let browseItems = getBrowseItems();
+
+        function getBrowseItems() {
+          let browseItems = [];
+          makeRequest('GET', SAMPLE_URL)
+                  .then(function (data) {
+                    for (let key in data) {
+                      let item = new cast.framework.ui.BrowseItem();
+                      item.entity = key;
+                      item.title = data[key].title;
+                      item.subtitle = data[key].description;
+                      item.image = new cast.framework.messages.Image(data[key].poster);
+                      item.imageType = cast.framework.ui.BrowseImageType.MOVIE;
+                      browseItems.push(item);
+                    }
+                  });
+          return browseItems;
         }
 
-        // 添加淡入動畫
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
-</body>
+        let browseContent = new cast.framework.ui.BrowseContent();
+        browseContent.title = 'Up Next';
+        browseContent.items = browseItems;
+        browseContent.targetAspectRatio =
+                cast.framework.ui.BrowseImageAspectRatio.LANDSCAPE_16_TO_9;
+
+        playerDataBinder.addEventListener(
+                cast.framework.ui.PlayerDataEventType.MEDIA_CHANGED,
+                (e) => {
+                  if (!e.value) return;
+
+                  // Media browse
+                  touchControls.setBrowseContent(browseContent);
+
+                  // Clear default buttons and re-assign
+                  touchControls.clearDefaultSlotAssignments();
+                  touchControls.assignButton(
+                          cast.framework.ui.ControlsSlot.SLOT_PRIMARY_1,
+                          cast.framework.ui.ControlsButton.SEEK_BACKWARD_30
+                  );
+                });
+
+        context.start();
+      </script>
+  </footer>
+  </body>
 </html>
